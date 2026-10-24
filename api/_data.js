@@ -16,12 +16,15 @@
 const fs   = require('fs');
 const path = require('path');
 
-// In local dev the server.js file already handles its own data directory,
-// so DATA_DIR is not set. In Vercel production we write to /tmp.
+// In local dev the server.js file already handles its own data directory.
+// In Vercel production we write to /tmp.
 const isVercel = process.env.VERCEL === '1';
 
-// The directory from which seed data is loaded (always the committed files).
-const SEED_DIR = path.join(__dirname, '..', 'data');
+// Direct require guarantees Vercel's bundler includes the seed files in the deployment artifact.
+let seedUsers = [];
+let seedDonations = [];
+try { seedUsers = require('../data/users.json'); } catch { seedUsers = []; }
+try { seedDonations = require('../data/donations.json'); } catch { seedDonations = []; }
 
 // The directory to which live data is written.
 const LIVE_DIR = isVercel
@@ -29,42 +32,53 @@ const LIVE_DIR = isVercel
   : path.join(__dirname, '..', 'data');
 
 function ensureDir() {
-  fs.mkdirSync(LIVE_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(LIVE_DIR, { recursive: true });
+  } catch (_) {}
+}
+
+function getInitialData(filename) {
+  if (filename === 'users.json') return seedUsers;
+  if (filename === 'donations.json') return seedDonations;
+  if (filename === 'tokens.json') return {};
+  return [];
 }
 
 /**
  * Returns the writable path for a given filename.
- * On Vercel, copies the seed file to /tmp on first access.
+ * On Vercel, initializes the seed file in /tmp on first access.
  */
 function dataPath(filename) {
   ensureDir();
   const live = path.join(LIVE_DIR, filename);
   if (isVercel && !fs.existsSync(live)) {
-    const seed = path.join(SEED_DIR, filename);
-    if (fs.existsSync(seed)) {
-      fs.copyFileSync(seed, live);
-    } else {
-      // Write a sensible default so the file always exists.
-      const defaults = { 'users.json': '[]', 'donations.json': '[]', 'tokens.json': '{}' };
-      fs.writeFileSync(live, defaults[filename] ?? '[]');
-    }
+    try {
+      const initial = getInitialData(filename);
+      fs.writeFileSync(live, JSON.stringify(initial, null, 2));
+    } catch (_) {}
   }
   return live;
 }
 
 function readJson(filename) {
-  const file = dataPath(filename);
+  const fallback = getInitialData(filename);
   try {
+    const file = dataPath(filename);
+    if (!fs.existsSync(file)) return fallback;
     const raw = fs.readFileSync(file, 'utf8');
-    return raw ? JSON.parse(raw) : [];
+    return raw ? JSON.parse(raw) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
 function writeJson(filename, data) {
-  const file = dataPath(filename);
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  try {
+    const file = dataPath(filename);
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.warn(`Failed writing ${filename}:`, err.message);
+  }
 }
 
 module.exports = { readJson, writeJson, dataPath, LIVE_DIR };

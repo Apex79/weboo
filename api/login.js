@@ -14,9 +14,7 @@ function sanitizeUser(user) {
 
 function createToken(email) {
   const token = crypto.randomBytes(24).toString('hex');
-  const tokensFile = dataPath('tokens.json');
-  let tokens = {};
-  try { tokens = JSON.parse(fs.readFileSync(tokensFile, 'utf8') || '{}'); } catch { tokens = {}; }
+  const tokens = readJson('tokens.json') || {};
   tokens[token] = { email, createdAt: Date.now() };
   writeJson('tokens.json', tokens);
   return token;

@@ -16,13 +16,8 @@ function sanitizeDonation(d) {
 function resolveEmailFromToken(req) {
   const rawToken = getToken(req);
   if (!rawToken) return null;
-  const tokensFile = dataPath('tokens.json');
-  try {
-    const tokens = JSON.parse(fs.readFileSync(tokensFile, 'utf8') || '{}');
-    return tokens[rawToken] ? tokens[rawToken].email : null;
-  } catch {
-    return null;
-  }
+  const tokens = readJson('tokens.json') || {};
+  return tokens[rawToken] ? tokens[rawToken].email : null;
 }
 
 module.exports = async function handler(req, res) {

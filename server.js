@@ -11,33 +11,37 @@ const DONATIONS_FILE = path.join(rootDir, 'data', 'donations.json');
 const TOKENS_FILE = path.join(rootDir, 'data', 'tokens.json');
 
 function ensureDataFiles() {
-  fs.mkdirSync(path.join(rootDir, 'data'), { recursive: true });
-  if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]');
-  if (!fs.existsSync(DONATIONS_FILE)) fs.writeFileSync(DONATIONS_FILE, '[]');
-  if (!fs.existsSync(TOKENS_FILE)) fs.writeFileSync(TOKENS_FILE, '{}');
+  try {
+    fs.mkdirSync(path.join(rootDir, 'data'), { recursive: true });
+    if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]');
+    if (!fs.existsSync(DONATIONS_FILE)) fs.writeFileSync(DONATIONS_FILE, '[]');
+    if (!fs.existsSync(TOKENS_FILE)) fs.writeFileSync(TOKENS_FILE, '{}');
 
-  const users = readJson(USERS_FILE);
-  const adminExists = users.some((user) => user.email === 'admin@clothcare.org');
-  if (!adminExists) {
-    users.push({
-      id: crypto.randomUUID(),
-      name: 'ClothCare Admin',
-      email: 'admin@clothcare.org',
-      password: 'admin123',
-      phone: '+1555000000',
-      createdAt: new Date().toISOString(),
-    });
-    writeJson(USERS_FILE, users);
-  }
+    const users = readJson(USERS_FILE);
+    const adminExists = users.some((user) => user.email === 'admin@clothcare.org');
+    if (!adminExists) {
+      users.push({
+        id: crypto.randomUUID(),
+        name: 'ClothCare Admin',
+        email: 'admin@clothcare.org',
+        password: 'admin123',
+        phone: '+1555000000',
+        createdAt: new Date().toISOString(),
+      });
+      writeJson(USERS_FILE, users);
+    }
 
-  const donations = readJson(DONATIONS_FILE);
-  if (!donations.length) {
-    const demoDonations = [
-      { id: 'CC1001', donorName: 'Rahul Sharma', email: 'rahul@example.com', phone: '+919876543210', type: 'Everyday clothes', quantity: 6, condition: 'Good', method: 'Pickup', notes: 'Mostly shirts and trousers.', date: new Date(Date.now() - 86400000).toISOString(), status: 'In review' },
-      { id: 'CC1002', donorName: 'Priya Singh', email: 'priya@example.com', phone: '+919812345678', type: "Children's clothes", quantity: 4, condition: 'Excellent', method: 'Drop-off', notes: 'Children clothing in good condition.', date: new Date(Date.now() - 172800000).toISOString(), status: 'Matched' },
-      { id: 'CC1003', donorName: 'Anita Patel', email: 'anita@example.com', phone: '+919812345670', type: 'Warm layers', quantity: 3, condition: 'Very good', method: 'Pickup', notes: 'Sweaters and cardigans.', date: new Date(Date.now() - 259200000).toISOString(), status: 'Completed' },
-    ];
-    writeJson(DONATIONS_FILE, demoDonations);
+    const donations = readJson(DONATIONS_FILE);
+    if (!donations.length) {
+      const demoDonations = [
+        { id: 'CC1001', donorName: 'Rahul Sharma', email: 'rahul@example.com', phone: '+919876543210', type: 'Everyday clothes', quantity: 6, condition: 'Good', method: 'Pickup', notes: 'Mostly shirts and trousers.', date: new Date(Date.now() - 86400000).toISOString(), status: 'In review' },
+        { id: 'CC1002', donorName: 'Priya Singh', email: 'priya@example.com', phone: '+919812345678', type: "Children's clothes", quantity: 4, condition: 'Excellent', method: 'Drop-off', notes: 'Children clothing in good condition.', date: new Date(Date.now() - 172800000).toISOString(), status: 'Matched' },
+        { id: 'CC1003', donorName: 'Anita Patel', email: 'anita@example.com', phone: '+919812345670', type: 'Warm layers', quantity: 3, condition: 'Very good', method: 'Pickup', notes: 'Sweaters and cardigans.', date: new Date(Date.now() - 259200000).toISOString(), status: 'Completed' },
+      ];
+      writeJson(DONATIONS_FILE, demoDonations);
+    }
+  } catch (err) {
+    // Read-only filesystem (e.g. AWS Lambda / Vercel container)
   }
 }
 
@@ -301,8 +305,10 @@ const server = http.createServer((req, res) => {
   res.end('Not found');
 });
 
-server.listen(PORT, () => {
-  console.log(`ClothCare server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`ClothCare server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = server;

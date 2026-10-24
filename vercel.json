@@ -1,25 +1,23 @@
 {
-  "version": 2,
-  "routes": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "cleanUrls": false,
+  "rewrites": [
     {
-      "src": "/api/register",
-      "dest": "/api/register.js"
+      "source": "/api/register",
+      "destination": "/api/register.js"
     },
     {
-      "src": "/api/login",
-      "dest": "/api/login.js"
+      "source": "/api/login",
+      "destination": "/api/login.js"
     },
     {
-      "src": "/api/donations",
-      "dest": "/api/donations.js"
+      "source": "/api/donations",
+      "destination": "/api/donations.js"
     },
     {
-      "src": "/api/admin",
-      "dest": "/api/admin.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/api/admin",
+      "destination": "/api/admin.js"
     }
   ]
 }
