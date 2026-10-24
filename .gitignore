@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Environment variables — never commit real credentials
+.env
+.env.local
+.env.production
+
+# Vercel build output
+.vercel/
+
+# OS junk
+.DS_Store
+Thumbs.db

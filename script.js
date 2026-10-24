@@ -31,11 +31,40 @@ async function apiRequest(path, options = {}) {
     }
     const url = `${path}${query.toString() ? `${path.includes("?") ? "&" : "?"}${query.toString()}` : ""}`;
 
-    const response = await fetch(url, { ...options, headers, body: options.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : undefined });
+    let response;
+    try {
+        response = await fetch(url, { ...options, headers, body: options.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : undefined });
+    } catch (networkError) {
+        throw new Error("Unable to reach the server. Please check your connection and try again.");
+    }
+
+    // Guard: only parse JSON when the server actually sent JSON.
+    // Any other content-type (e.g. HTML from a 404 page or a proxy error)
+    // must NOT be passed to JSON.parse — that is the source of the
+    // "Unexpected token '<'" error reported by users.
+    const contentType = response.headers.get("Content-Type") || "";
+    if (!contentType.includes("application/json")) {
+        // Non-JSON body — the API route is unreachable or misconfigured.
+        if (!response.ok) {
+            throw new Error(
+                `Server error (HTTP ${response.status}). The API is unavailable — ` +
+                "make sure the backend is running or the deployment is configured correctly."
+            );
+        }
+        // Unexpected success with a non-JSON body (shouldn't happen in normal operation).
+        return {};
+    }
+
     const text = await response.text();
-    const payload = text ? JSON.parse(text) : {};
+    let payload = {};
+    try {
+        payload = text ? JSON.parse(text) : {};
+    } catch (_) {
+        throw new Error("The server returned an unexpected response. Please try again later.");
+    }
+
     if (!response.ok) {
-        throw new Error(payload.error || "Something went wrong.");
+        throw new Error(payload.error || "Something went wrong. Please try again.");
     }
     return payload;
 }

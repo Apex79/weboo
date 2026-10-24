@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "PORT=4321 node --test server.test.js"
+    "dev": "node server.js",
+    "test": "cross-env PORT=4321 node --test server.test.js"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }

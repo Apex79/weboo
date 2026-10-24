@@ -228,9 +228,9 @@ function handleApi(req, res) {
 
   if (url.pathname === '/api/admin' && req.method === 'GET') {
     const email = resolveToken(req);
-    if (!email) return sendJson(res, 401, { error: 'Admin access required.' });
+    if (!email) { sendJson(res, 401, { error: 'Admin access required.' }); return true; }
     const user = getUserByEmail(email);
-    if (!user) return sendJson(res, 403, { error: 'User session not found.' });
+    if (!user) { sendJson(res, 403, { error: 'User session not found.' }); return true; }
     const donations = readJson(DONATIONS_FILE);
     sendJson(res, 200, {
       user: sanitizeUser(user),
@@ -248,10 +248,10 @@ function handleApi(req, res) {
 
   if (url.pathname === '/api/admin' && req.method === 'PUT') {
     const email = resolveToken(req);
-    if (!email) return sendJson(res, 401, { error: 'Admin access required.' });
+    if (!email) { sendJson(res, 401, { error: 'Admin access required.' }); return true; }
     const user = getUserByEmail(email);
     if (!user || String(user.email).toLowerCase() !== 'admin@clothcare.org') {
-      return sendJson(res, 403, { error: 'You do not have admin access.' });
+      sendJson(res, 403, { error: 'You do not have admin access.' }); return true;
     }
     parseBody(req)
       .then(({ donationId, status }) => {
@@ -304,3 +304,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`ClothCare server running on http://localhost:${PORT}`);
 });
+
+module.exports = server;
